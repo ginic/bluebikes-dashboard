@@ -1,45 +1,32 @@
-# A build system is required to convert your code into a distributable package.
-# setuptools is the oldest and most common build tool, but we also like Poetry
-[build-system]
-requires = ["setuptools >= 61.0"]
-build-backend = "setuptools.build_meta"
-
-[project]
+[tool.poetry]
 name = "bluebikesdashboard"
-version = "0.0.1"
+version = "0.1.0"
 description = "A Dash application to analyze Bluebikes trips."
+authors = ["Virginia Partridge <vcpartridge@gmail.com>"]
+license = "MIT License"
 readme = "README.md"
 
-# What version of python does your library work with?
-requires-python = ">=3.10"
+[tool.poetry.dependencies]
+python = "^3.10"
+dash = "^2.18.2"
+plotly = "^5.24.1"
+pandas = "^2.2.3"
 
-# Metadata about your package in case you upload it to PYPI
-classifiers = [
-    "Programming Language :: Python :: 3",
-    "License :: OSI Approved :: MIT License",
-    "Operating System :: OS Independent",
-]
 
-# All the dependencies needed for running your module go here
-dependencies = [
-    "dash",
-    "pandas",
-    "plotly",
-]
+[tool.poetry.group.test.dependencies]
+pytest = "^8.3.4"
 
-[project.optional-dependencies]
-# Extra dependencies only needed for running tests go here
-test = ["pytest"]
 
-# Dependencies that are useful only to developers, like an autoformatter and
-# support for visualizations in jupyter notebooks go here
-dev = [
-    "ruff",
-    "jupyter",
-    "matplotlib",
-    "seaborn",
-    "sphinx",
-]
+[tool.poetry.group.dev.dependencies]
+ruff = "^0.8.2"
+jupyter = "^1.1.1"
+networkx = "^3.4.2"
+osmnx = "^2.0.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
 
 # Add customizations to the Ruff linter as described on https://docs.astral.sh/ruff/configuration/
 [tool.ruff]
