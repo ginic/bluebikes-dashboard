@@ -62,7 +62,7 @@ TRIPS_BY_MONTH_PLOT = dcc.Loading(
 )
 
 STATION_MAP_PLOT = dcc.Loading(
-    [dcc.Graph(id="output-plot-station-map", style={"width": "90vh", "height": "90vw"})],
+    [dcc.Graph(id="output-plot-station-map", style={"width": "90vw", "height": "90vh"})],
     overlay_style={"visibility": "visible", "opacity": 0.5, "backgroundColor": "white"},
     custom_spinner=html.H2([dbc.Spinner(color="warning")]),
 )
