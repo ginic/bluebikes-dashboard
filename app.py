@@ -55,23 +55,40 @@ TYPE_CHECKLIST = html.Div(
 
 QUERY_BUTTON = dbc.Button("Plot Results!", id="button-plot", n_clicks=0)
 
-TRIPS_BY_MONTH_PLOT = dcc.Graph(id="output-plot-trips-by-month")
+TRIPS_BY_MONTH_PLOT = dcc.Loading(
+    [dcc.Graph(id="output-plot-trips-by-month", style={"height": "50vh"})],
+    overlay_style={"visibility": "visible", "opacity": 0.5, "backgroundColor": "white"},
+    custom_spinner=html.H2([dbc.Spinner(color="warning")]),
+)
+
+STATION_MAP_PLOT = dcc.Loading(
+    [dcc.Graph(id="output-plot-station-map", style={"width": "90vh", "height": "90vw"})],
+    overlay_style={"visibility": "visible", "opacity": 0.5, "backgroundColor": "white"},
+    custom_spinner=html.H2([dbc.Spinner(color="warning")]),
+)
 
 app.layout = dbc.Container(
     html.Div(
         children=[
             html.Br(),
             TOP_DIV,
-            html.Br(),
+            html.Hr(),
             dbc.Row([dbc.Col(DATE_PICKER), dbc.Col(TYPE_CHECKLIST)]),
             html.Br(),
             dbc.Row([QUERY_BUTTON]),
             html.Br(),
             TRIPS_BY_MONTH_PLOT,
             html.Br(),
+            STATION_MAP_PLOT,
         ]
     )
 )
+
+
+def get_ride_type_as_boolean(ride_types):
+    use_ebikes = "Electric Bikes" in ride_types
+    use_classic_bikes = "Classic Bikes" in ride_types
+    return use_ebikes, use_classic_bikes
 
 
 @callback(
@@ -82,8 +99,7 @@ app.layout = dbc.Container(
     Input("button-plot", "n_clicks"),
 )
 def update_trips_by_month_plot(start_date, end_date, ride_types, n_clicks):
-    use_ebikes = "Electric Bikes" in ride_types
-    use_classic_bikes = "Classic Bikes" in ride_types
+    use_ebikes, use_classic_bikes = get_ride_type_as_boolean(ride_types)
     df = bbdq.query_trips_by_date_range(database, start_date, end_date, use_ebikes, use_classic_bikes)
     fig = px.line(df, x="month", y="num_trips", color="rideable_type")
 
@@ -93,6 +109,49 @@ def update_trips_by_month_plot(start_date, end_date, ride_types, n_clicks):
         yaxis=dict(title=dict(text="Number of Trips")),
     )
 
+    return fig
+
+
+@callback(
+    Output("output-plot-station-map", "figure"),
+    State("date-picker-range", "start_date"),
+    State("date-picker-range", "end_date"),
+    State("ride-type-checklist", "value"),
+    Input("button-plot", "n_clicks"),
+)
+def update_station_map_plot(start_date, end_date, ride_types, n_clicks):
+    use_ebikes, use_classic_bikes = get_ride_type_as_boolean(ride_types)
+    dataframe = bbdq.get_trip_statistics_by_station(
+        database,
+        start_date,
+        end_date,
+        # start_station,
+        # end_station,
+        # is_stats_by_end_stations,
+        is_include_ebikes=use_ebikes,
+        is_include_classic_bikes=use_classic_bikes,
+    )
+    dataframe = dataframe.rename(
+        columns={
+            "avg_tripduration": "Average trip duration (minutes)",
+            "num_trips": "Total number of trips",
+        }
+    )
+    fig = px.scatter_map(
+        dataframe,
+        lat="latitude",
+        lon="longitude",
+        color="Average trip duration (minutes)",
+        size="Total number of trips",
+        size_max=20,
+        zoom=10,
+        color_continuous_scale=px.colors.cyclical.IceFire,
+        hover_name="station_name",
+    )
+    fig.update_layout(
+        title=dict(text="Trips Counts and Average Duration by Station"),
+        coloraxis_colorbar_title_text="Average trip duration<br>in minutes",
+    )
     return fig
 
 
