@@ -25,9 +25,14 @@ station_names = list(station_names_to_ids.keys())
 
 
 TITLE = "🚲 Bluebikes Trips Analysis Dashboard 🚲"
-INTRO_TEXT = "Explore Bluebikes trip data."
+INTRO_TEXT = "Bluebikes bike share riders took over 4.5 million trips in the past year, riding for a collective 1.2 million hours or 50,000 days! That's a lot of cycling."
+DASHBOARD_INSTRUCTIONS = "Where were they all going? Take a look below to see! You can see how many trips started or ended at certain bike share station locations and when e-bikes were introduced. By viewing average trip duration, you can even see which stations users take long, leisurely rides from and which ones are used for short, quick trips. Once you've picked your options, click the big blue button to show results."
 TOP_DIV = html.Div(
-    children=[html.H1(children=TITLE), html.Div(children=INTRO_TEXT)],
+    children=[
+        html.H1(children=TITLE),
+        html.Br(),
+        html.Div(children=[html.P(INTRO_TEXT), html.P(DASHBOARD_INSTRUCTIONS)], style={"width": "80vw"}),
+    ],
     style={"textAlign": "center"},
 )
 
@@ -92,11 +97,8 @@ METRIC_CHOICE_RADIO = [
     dbc.Label("Compute and display: ", html_for="metric-radio", width="auto"),
     dbc.Col(
         dcc.RadioItems(
-            [
-                {"label": "Total number of trips", "value": "count"},
-                {"label": "Average trip duration", "value": "duration"},
-            ],
-            "count",
+            ["Total number of trips", "Average trip duration"],
+            "Total number of trips",
             id="metric-radio",
         ),
         className="me-3",
@@ -148,16 +150,29 @@ def get_ride_type_as_boolean(ride_types):
     return use_ebikes, use_classic_bikes
 
 
+def get_station_ids(station_names):
+    if station_names:
+        return [station_names_to_ids[n] for n in station_names]
+    return None
+
+
 @callback(
     Output("output-plot-trips-by-month", "figure"),
     State("date-picker-range", "start_date"),
     State("date-picker-range", "end_date"),
     State("ride-type-checklist", "value"),
+    State("start-stations-dropdown", "value"),
+    State("end-stations-dropdown", "value"),
     Input("button-plot", "n_clicks"),
 )
-def update_trips_by_month_plot(start_date, end_date, ride_types, n_clicks):
+def update_trips_by_month_plot(start_date, end_date, ride_types, start_stations, end_stations, n_clicks):
     use_ebikes, use_classic_bikes = get_ride_type_as_boolean(ride_types)
-    df = bbdq.query_trips_by_date_range(database, start_date, end_date, use_ebikes, use_classic_bikes)
+    start_station_ids = get_station_ids(start_stations)
+    end_station_ids = get_station_ids(end_stations)
+
+    df = bbdq.query_trips_by_date_range(
+        database, start_date, end_date, use_ebikes, use_classic_bikes, start_station_ids, end_station_ids
+    )
     fig = px.line(df, x="month", y="num_trips", color="rideable_type")
 
     fig.update_layout(
@@ -174,37 +189,59 @@ def update_trips_by_month_plot(start_date, end_date, ride_types, n_clicks):
     State("date-picker-range", "start_date"),
     State("date-picker-range", "end_date"),
     State("ride-type-checklist", "value"),
+    State("start-stations-dropdown", "value"),
+    State("end-stations-dropdown", "value"),
+    State("trips-start-or-end-radio", "value"),
+    State("metric-radio", "value"),
     Input("button-plot", "n_clicks"),
 )
-def update_station_map_plot(start_date, end_date, ride_types, n_clicks):
+def update_station_map_plot(
+    start_date, end_date, ride_types, start_stations, end_stations, trips_start_or_end, metric, n_clicks
+):
     use_ebikes, use_classic_bikes = get_ride_type_as_boolean(ride_types)
+    start_station_ids = get_station_ids(start_stations)
+    end_station_ids = get_station_ids(end_stations)
+
     dataframe = bbdq.get_trip_statistics_by_station(
         database,
         start_date,
         end_date,
-        # start_station,
-        # end_station,
-        # is_stats_by_end_stations,
+        start_station_ids=start_station_ids,
+        end_station_ids=end_station_ids,
         is_include_ebikes=use_ebikes,
         is_include_classic_bikes=use_classic_bikes,
+        stats_by_station_at=trips_start_or_end,
     )
     dataframe = dataframe.rename(
         columns={
-            "avg_tripduration": "Average trip duration (minutes)",
+            "avg_tripduration": "Average trip duration",
             "num_trips": "Total number of trips",
         }
     )
+
+    title = f"Trip Counts by {trips_start_or_end.title()} Station".title()
+    label = "Total trips"
+
+    if metric == "Average trip duration":
+        title = f"Average Duration of Trips {trips_start_or_end.title()}ing at Station"
+        label = "Average trip duration<br>in minutes"
+
     fig = px.scatter_map(
         dataframe,
         lat="latitude",
         lon="longitude",
-        color="Average trip duration (minutes)",
-        color_continuous_scale=px.colors.cyclical.IceFire,
+        color=metric,
+        color_continuous_scale=px.colors.diverging.Portland,
         hover_name="station_name",
     )
     fig.update_layout(
-        title=dict(text="Trips Counts and Average Duration by Station"),
-        coloraxis_colorbar_title_text="Average trip duration<br>in minutes",
+        title=dict(text=title),
+        coloraxis_colorbar_title_text=label,
+    )
+    fig.update_traces(
+        marker=dict(
+            size=12,
+        )
     )
     return fig
 
