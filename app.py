@@ -231,7 +231,7 @@ def update_station_map_plot(
         lat="latitude",
         lon="longitude",
         color=metric,
-        color_continuous_scale=px.colors.diverging.Portland,
+        color_continuous_scale=px.colors.sequential.Jet,
         hover_name="station_name",
     )
     fig.update_layout(
