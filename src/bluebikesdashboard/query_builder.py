@@ -8,7 +8,7 @@ import pandas as pd
 logger = logging.getLogger(__name__)
 
 
-def run_sqlite_query_with_pandas(database, base_query, params):
+def run_sqlite_query_with_pandas(database, base_query, params=None):
     logger.debug("Database %s exists: %s", database, os.path.exists(database))
     logger.debug("Querying database %s", database)
     with sqlite3.connect(database) as conn:
@@ -35,6 +35,14 @@ def get_rideable_type_restriction(is_include_ebikes=True, is_include_classic_bik
     elif is_include_classic_bikes and not is_include_ebikes:
         restriction = "AND rideable_type = 'classic_bike'"
     return restriction
+
+
+def query_stations(database):
+    q = "SELECT id, station_name FROM normalized_stations;"
+    logger.debug("Querying for station list")
+    stations = run_sqlite_query_with_pandas(database, q)
+    logger.debug("%s stations found", len(stations))
+    return stations
 
 
 def query_trips_by_date_range(

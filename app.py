@@ -20,6 +20,9 @@ logger.info("Using database %s", database)
 app = Dash(__name__, external_stylesheets=[dbc.themes.CERULEAN])
 server = app.server
 
+station_names_to_ids = {d["station_name"]: d["id"] for d in bbdq.query_stations(database).to_dict("records")}
+station_names = list(station_names_to_ids.keys())
+
 
 TITLE = "🚲 Bluebikes Trips Analysis Dashboard 🚲"
 INTRO_TEXT = "Explore Bluebikes trip data."
@@ -28,9 +31,9 @@ TOP_DIV = html.Div(
     style={"textAlign": "center"},
 )
 
-DATE_PICKER = html.Div(
-    children=[
-        dbc.Label("Date range for trips: "),
+DATE_PICKER = [
+    dbc.Label("Date range for trips: ", html_for="date-picker-range", width="auto"),
+    dbc.Col(
         dcc.DatePickerRange(
             id="date-picker-range",
             min_date_allowed=date(2023, 4, 1),
@@ -39,19 +42,67 @@ DATE_PICKER = html.Div(
             start_date=date(2023, 4, 1),
             end_date=date(2024, 12, 1),
         ),
-    ]
-)
+        className="me-3",
+    ),
+]
 
-TYPE_CHECKLIST = html.Div(
-    children=[
-        dbc.Label("Include trips with: "),
+TYPE_CHECKLIST = [
+    dbc.Label("Trips by: ", html_for="ride-type-checklist", width="auto"),
+    dbc.Col(
         dcc.Checklist(
             id="ride-type-checklist",
             options=["Electric Bikes", "Classic Bikes"],
             value=["Electric Bikes", "Classic Bikes"],
         ),
-    ]
-)
+        className="me-3",
+    ),
+]
+
+START_STATIONS_SELECTOR = [
+    dbc.Label("Trips starting at: ", html_for="start-stations-dropdown", width="auto"),
+    dbc.Col(
+        dcc.Dropdown(station_names, multi=True, placeholder="Choose starting stations", id="start-stations-dropdown"),
+        className="me-3",
+    ),
+]
+
+
+END_STATIONS_SELECTOR = [
+    dbc.Label("Trips ending at: ", html_for="end-stations-dropdown", width="auto"),
+    dbc.Col(
+        dcc.Dropdown(station_names, multi=True, placeholder="Choose end stations", id="end-stations-dropdown"),
+        className="me-3",
+    ),
+]
+
+
+TRIPS_START_OR_END_RADIO = [
+    dbc.Label("Display statistics for trips that: ", html_for="trips-start-or-end-radio", width="auto"),
+    dbc.Col(
+        dcc.RadioItems(
+            [{"label": "Start at stations", "value": "start"}, {"label": "End at stations", "value": "end"}],
+            "start",
+            id="trips-start-or-end-radio",
+        ),
+        className="me-3",
+    ),
+]
+
+METRIC_CHOICE_RADIO = [
+    dbc.Label("Compute and display: ", html_for="metric-radio", width="auto"),
+    dbc.Col(
+        dcc.RadioItems(
+            [
+                {"label": "Total number of trips", "value": "count"},
+                {"label": "Average trip duration", "value": "duration"},
+            ],
+            "count",
+            id="metric-radio",
+        ),
+        className="me-3",
+    ),
+]
+
 
 QUERY_BUTTON = dbc.Button("Plot Results!", id="button-plot", n_clicks=0)
 
@@ -73,7 +124,13 @@ app.layout = dbc.Container(
             html.Br(),
             TOP_DIV,
             html.Hr(),
-            dbc.Row([dbc.Col(DATE_PICKER), dbc.Col(TYPE_CHECKLIST)]),
+            dbc.Row([dbc.Col(html.H3("Trip selection options"))]),
+            dbc.Row(DATE_PICKER + TYPE_CHECKLIST, className="g-3"),
+            html.Br(),
+            dbc.Row(START_STATIONS_SELECTOR + END_STATIONS_SELECTOR, className="g-3"),
+            html.Br(),
+            dbc.Row([dbc.Col(html.H3("Map display options"))]),
+            dbc.Row(METRIC_CHOICE_RADIO + TRIPS_START_OR_END_RADIO, className="g-3"),
             html.Br(),
             dbc.Row([QUERY_BUTTON]),
             html.Br(),
@@ -142,9 +199,6 @@ def update_station_map_plot(start_date, end_date, ride_types, n_clicks):
         lat="latitude",
         lon="longitude",
         color="Average trip duration (minutes)",
-        size="Total number of trips",
-        size_max=20,
-        zoom=10,
         color_continuous_scale=px.colors.cyclical.IceFire,
         hover_name="station_name",
     )
