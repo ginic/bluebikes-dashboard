@@ -26,7 +26,7 @@ station_names = list(station_names_to_ids.keys())
 
 TITLE = "🚲 Bluebikes Trips Analysis Dashboard 🚲"
 INTRO_TEXT = "Bluebikes bike share riders took over 4.5 million trips in the past year, riding for a collective 1.2 million hours or 50,000 days! That's a lot of cycling."
-DASHBOARD_INSTRUCTIONS = "Where were they all going? Take a look below to see! You can see how many trips started or ended at certain bike share station locations and when e-bikes were introduced. By viewing average trip duration, you can even see which stations users take long, leisurely rides from and which ones are used for short, quick trips. Once you've picked your options, click the big blue button to show results."
+DASHBOARD_INSTRUCTIONS = "Where were they all going? Take a look below to see! You can see how many trips started or ended at certain bike share station locations and when e-bikes were introduced. By viewing average trip duration, you can even see where users take long, leisurely rides from and which stations are used for quick trips. Once you've picked your options, click the big blue button to show results."
 TOP_DIV = html.Div(
     children=[
         html.H1(children=TITLE),

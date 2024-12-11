@@ -1,7 +1,7 @@
 # 🚲 Bluebikes Trips Analysis Dashboard 🚲
 
-Want to know where people travel using Boston's Bluebikes? See which stations are most
-popular and where
+Want to know where people travel using Boston's Bluebikes? See how many trips are taken
+each month, which stations are most popular, where riders travel to and how long they ride for on average.
 
 # Getting Started
 ## Installing Dependencies and Packages
