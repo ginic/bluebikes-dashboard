@@ -51,13 +51,15 @@ DATE_PICKER = [
     ),
 ]
 
+E_BIKES_LABEL = "Electric Bikes"
+CLASSIC_BIKES_LABEL = "Classic Bikes"
 TYPE_CHECKLIST = [
     dbc.Label("Trips by: ", html_for="ride-type-checklist", width="auto"),
     dbc.Col(
         dcc.Checklist(
             id="ride-type-checklist",
-            options=["Electric Bikes", "Classic Bikes"],
-            value=["Electric Bikes", "Classic Bikes"],
+            options=[E_BIKES_LABEL, CLASSIC_BIKES_LABEL],
+            value=[E_BIKES_LABEL, CLASSIC_BIKES_LABEL],
         ),
         className="me-3",
     ),
@@ -93,12 +95,14 @@ TRIPS_START_OR_END_RADIO = [
     ),
 ]
 
+NUM_TRIPS_METRIC_LABEL = "Total number of trips"
+AVG_DURATION_METRIC_LABEL = "Average trip duration"
 METRIC_CHOICE_RADIO = [
     dbc.Label("Compute and display: ", html_for="metric-radio", width="auto"),
     dbc.Col(
         dcc.RadioItems(
-            ["Total number of trips", "Average trip duration"],
-            "Total number of trips",
+            [NUM_TRIPS_METRIC_LABEL, AVG_DURATION_METRIC_LABEL],
+            NUM_TRIPS_METRIC_LABEL,
             id="metric-radio",
         ),
         className="me-3",
@@ -145,14 +149,17 @@ app.layout = dbc.Container(
 
 
 def get_ride_type_as_boolean(ride_types):
-    use_ebikes = "Electric Bikes" in ride_types
-    use_classic_bikes = "Classic Bikes" in ride_types
+    use_ebikes = E_BIKES_LABEL in ride_types
+    use_classic_bikes = CLASSIC_BIKES_LABEL in ride_types
     return use_ebikes, use_classic_bikes
 
 
 def get_station_ids(station_names):
     if station_names:
-        return [station_names_to_ids[n] for n in station_names]
+        station_ids = [station_names_to_ids[n] for n in station_names]
+        logger.debug("User selection stations: %s; Corresponding ids: %s", station_names, station_ids)
+        return station_ids
+
     return None
 
 
@@ -179,6 +186,7 @@ def update_trips_by_month_plot(start_date, end_date, ride_types, start_stations,
         title=dict(text="Monthly Bluebikes Trips"),
         xaxis=dict(title=dict(text="Month")),
         yaxis=dict(title=dict(text="Number of Trips")),
+        legend_title="Bike Type",
     )
 
     return fig
@@ -212,27 +220,30 @@ def update_station_map_plot(
         is_include_classic_bikes=use_classic_bikes,
         stats_by_station_at=trips_start_or_end,
     )
-    dataframe = dataframe.rename(
-        columns={
-            "avg_tripduration": "Average trip duration",
-            "num_trips": "Total number of trips",
-        }
-    )
+
+    display_name_map = {
+        "avg_tripduration": "Average trip duration (minutes)",
+        "num_trips": "Total number of trips",
+    }
+
+    dataframe = dataframe.rename(columns=display_name_map)
 
     title = f"Trip Counts by {trips_start_or_end.title()} Station".title()
     label = "Total trips"
-
-    if metric == "Average trip duration":
+    metric_label = "Total number of trips"
+    if metric == AVG_DURATION_METRIC_LABEL:
         title = f"Average Duration of Trips {trips_start_or_end.title()}ing at Station"
         label = "Average trip duration<br>in minutes"
+        metric_label = "Average trip duration (minutes)"
 
     fig = px.scatter_map(
         dataframe,
         lat="latitude",
         lon="longitude",
-        color=metric,
+        color=metric_label,
         color_continuous_scale=px.colors.sequential.Jet,
         hover_name="station_name",
+        hover_data=display_name_map.values(),
     )
     fig.update_layout(
         title=dict(text=title),

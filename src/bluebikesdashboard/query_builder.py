@@ -37,7 +37,10 @@ def get_rideable_type_restriction(is_include_ebikes=True, is_include_classic_bik
     return restriction
 
 
-def get_list_restriction(list_restriction, column_name):
+def get_list_restriction(
+    column_name,
+    list_restriction,
+):
     return f"AND {column_name} IN (" + ", ".join(["?"] * len(list_restriction)) + ")"
 
 
@@ -61,7 +64,7 @@ def query_trips_by_date_range(
     base_query = (
         "SELECT "
         "STRFTIME('%Y-%m', started_at) AS month, "
-        "rideable_type AS rideable_type, "
+        "CASE rideable_type WHEN 'electric_bike' THEN 'Electric Bike' ELSE 'Classic Bike' END AS rideable_type, "
         "count(id) AS num_trips "
         "FROM normalized_bluebikes "
         "WHERE (date(started_at) >= date(?) AND date(started_at) < date(?))"
