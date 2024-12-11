@@ -51,8 +51,8 @@ DATE_PICKER = [
     ),
 ]
 
-E_BIKES_LABEL = "Electric Bikes"
-CLASSIC_BIKES_LABEL = "Classic Bikes"
+E_BIKES_LABEL = "Electric Bike"
+CLASSIC_BIKES_LABEL = "Classic Bike"
 TYPE_CHECKLIST = [
     dbc.Label("Trips by: ", html_for="ride-type-checklist", width="auto"),
     dbc.Col(
