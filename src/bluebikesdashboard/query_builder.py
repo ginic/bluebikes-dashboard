@@ -133,5 +133,6 @@ def get_trip_statistics_by_station(
     full_query = " ".join([base_query, restriction, groupby])
     logger.debug("Querying trip statistics grouped by station with params: %s", params)
     dataframe = run_sqlite_query_with_pandas(database, full_query, params)
+    dataframe["avg_tripduration"] = dataframe["avg_tripduration"].round(2)
     logger.debug("Data snippet: %s", dataframe)
     return dataframe
